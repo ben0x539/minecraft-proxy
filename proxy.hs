@@ -292,7 +292,6 @@ instance Read Packet where
       startsWith prefix = prefix `isPrefixOf` s
 
 
--- $(derive makeBinary ''PacketKeepAlive)
 instance Binary PacketKeepAlive where
   get = return PacketKeepAlive
   put _ = return ()
@@ -386,7 +385,6 @@ clientPacketFilter packet = inspect p
         "send"   -> readSendPacket ("Packet" ++ arg)
         "return" -> readReturnPacket ("Packet" ++ arg)
         "take"   -> parseItemRequest arg
-        "warp"   -> parseWarpRequest arg
         _        -> passThrough
     readSendPacket s = case readPacket s of
       Left  err       -> ([], [err])
@@ -410,19 +408,6 @@ clientPacketFilter packet = inspect p
                                             [(count, rest')] -> case reads rest' of
                                                                   []                 -> (itemID, count, 0)
                                                                   [(damage, rest'')] -> (itemID, count, damage)
-    parseWarpRequest str = if okay
-                             then ([makePacket], [makePacket])
-                             else ([], [Packet . PacketChat . PrefixString $ "error: warp: no parse"])
-      where
-        makePacket = Packet $ PacketPlayerPosition  (Float64be x) (Float64be z) (Float64be (z+1)) (Float64be y) True
-        (okay, x, y, z) = parseNums
-        parseNums = case reads str of
-                            [] -> (False, 0, 0, 0)
-                            [(x, rest)] -> case reads rest of
-                                             [] -> (False, 0, 0, 0)
-                                             [(y, rest')] -> case reads rest of
-                                                               [] -> (False, 0, 0, 0)
-                                                               [(z, rest'')] -> (True, x, y, z)
 
 
 clientListener, serverListener :: Handle -> PacketHandler -> PacketHandler -> Chan (Maybe String) -> IO ()
@@ -450,9 +435,6 @@ connectionListener handler prefix handle onHandler backHandler consoleChan = do
       result <- try (evaluate $ runGetState (get :: Get Packet) str 0)
       case result of
         Left (e :: SomeException) -> do
-          --when (len > 1024*5) $ do
-          --  say (show e)
-          --  say ("  buffer is: " ++ show str)
           readMore str
         Right (p, rest, consumed) -> do
           checkPacket (L.take consumed str) p
