@@ -1,4 +1,4 @@
-{-# LANGUAGE ExistentialQuantification, ViewPatterns, StandaloneDeriving, TemplateHaskell, ScopedTypeVariables #-}
+{-# LANGUAGE Rank2Types, ExistentialQuantification, ViewPatterns, StandaloneDeriving, TemplateHaskell, ScopedTypeVariables #-}
 
 import Control.Concurrent
 import Data.Binary
@@ -106,7 +106,7 @@ fromPacket (Packet q) = guard (packetTag q == packetTag p) >> Just p
     p = unsafeCoerce q :: p
 
 data PacketKeepAlive        = PacketKeepAlive
-data PacketLogin            = PacketLogin Int32 PrefixString PrefixString
+data PacketLogin            = PacketLogin Int32 PrefixString PrefixString Int64 Int8
 data PacketHandshake        = PacketHandshake PrefixString
 data PacketChat             = PacketChat PrefixString
 data PacketUpdateTime       = PacketUpdateTime Int64
@@ -366,7 +366,9 @@ type PacketFilter = Packet -> ([Packet], [Packet])
 serverPacketFilter :: PacketFilter
 serverPacketFilter packet = inspect p
   where
+    p :: AnyPacket t => Maybe t
     p = fromPacket packet
+    inspect :: (forall t. AnyPacket t => Maybe t) -> ([Packet], [Packet])
     inspect (Just (PacketUpdateTime _)) = ([Packet $ PacketUpdateTime 0], [])
     inspect otherPacket = ([packet], [])
 
@@ -376,7 +378,9 @@ clientPacketFilter :: PacketFilter
 clientPacketFilter packet = inspect p
   where
     passThrough = ([packet], [])
+    p :: AnyPacket t => Maybe t
     p = fromPacket packet
+    inspect :: (forall t. AnyPacket t => Maybe t) -> ([Packet], [Packet])
     inspect (Just (PacketChat (PrefixString ('/':str)))) = checkSlashCommand str
     inspect otherPacket = passThrough
     checkSlashCommand str =
@@ -483,6 +487,6 @@ main = withSocketsDo $ do
       L.hPut handle (encode packet)
     sayLoop chan =
       let go = readChan chan >>= \msg -> case msg of
-                 Just s -> putStrLn (take 80 s) >> hFlush stdout >> go
+                 Just s -> putStrLn (take 160 s) >> hFlush stdout >> go
                  Nothing -> putStrLn "exitting"
       in go
