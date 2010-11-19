@@ -20,18 +20,13 @@ definePacket baseName tag fields = do
     constructor = [NormalC name (map ((,) NotStrict . ConT . mkName) fields)]
     binaryInstance d
       | not (null fields) = deriveFromDec makeBinary d
-      | otherwise         = return [InstanceD [] (AppT (ConT ''Binary) (ConT name)) [
-                              ValD (VarP 'get)
-                                   (NormalB (AppE (VarE 'return) (ConE name)))
-                                   [],
-                              FunD 'put
-                                   [Clause [WildP] (NormalB (AppE (VarE 'return) (TupE [])))
-                                   []]
-                            ]]
+      | otherwise = [d| instance Binary $dataType where
+                          get   = return $(conE name)
+                          put _ = return () |]
     anyPacketInstance = InstanceD [] (AppT (ConT ''AnyPacket) (ConT name)) [
                           ValD (VarP 'packetTag)
                                (NormalB (AppE (VarE 'const) (LitE (IntegerL tag))))
                                []
                         ]
-    -- anyPacketInstance = [d| instanceD AnyPacket $dataType where
+    -- anyPacketInstance = [d| instance AnyPacket $dataType where
     --                           packetTag = const $(litE (WordPrimL tag)) |]
