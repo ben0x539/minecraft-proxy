@@ -5,5 +5,5 @@ version:              0.1
 
 executable proxy
   build-depends:      base < 5, derive, network, array, binary, bytestring,
-                      data-binary-ieee754, utf8-string
+                      data-binary-ieee754, utf8-string, template-haskell
   main-is:            proxy.hs

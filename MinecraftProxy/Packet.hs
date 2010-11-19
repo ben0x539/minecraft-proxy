@@ -1,9 +1,10 @@
 {-# LANGUAGE Rank2Types, ExistentialQuantification, ViewPatterns, StandaloneDeriving, TemplateHaskell, ScopedTypeVariables #-}
-{-# OPTIONS_GHC -fth -Wall #-}
 
 module MinecraftProxy.Packet where
 
 import Prelude hiding ((.))
+import MinecraftProxy.PacketTH
+import MinecraftProxy.AnyPacket
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
@@ -13,7 +14,6 @@ import Data.Char
 import Data.List
 import qualified Data.ByteString as B
 import qualified Data.ByteString.UTF8 as UTF8
-import Data.DeriveTH
 import Control.Applicative
 import Data.Array.IArray
 import Control.Monad
@@ -94,124 +94,50 @@ data Packet = forall p. (AnyPacket p) => Packet p
 
 deriving instance Show Packet
 
-class (Binary p, Show p, Read p) => AnyPacket p where
-  packetTag :: p -> Int8
-
 fromPacket :: forall p . AnyPacket p => Packet -> Maybe p
 fromPacket (Packet q) = guard (packetTag q == packetTag p) >> Just p
   where
     p = unsafeCoerce q :: p
 
-data PacketKeepAlive        = PacketKeepAlive
-data PacketLogin            = PacketLogin Int32 PrefixString PrefixString Int64 Int8
-data PacketHandshake        = PacketHandshake PrefixString
-data PacketChat             = PacketChat PrefixString
-data PacketUpdateTime       = PacketUpdateTime Int64
-data PacketPlayerInventory  = PacketPlayerInventory Int32 InventoryArray
-data PacketSpawnPosition    = PacketSpawnPosition Int32 Int32 Int32
-data PacketUseEntity        = PacketUseEntity Int32 Int32
-data PacketFlying           = PacketFlying Bool
-data PacketPlayerPosition   = PacketPlayerPosition Float64be Float64be Float64be Float64be Bool
-data PacketPlayerLook       = PacketPlayerLook Float32be Float32be Bool
-data PacketPlayerMoveLook   = PacketPlayerMoveLook Float64be Float64be Float64be Float64be Float32be Float32be Bool
-data PacketBlockDig         = PacketBlockDig Int8 Int32 Int8 Int32 Int8
-data PacketPlace            = PacketPlace Int16 Int32 Int8 Int32 Int8
-data PacketItemSwitch       = PacketItemSwitch Int32 Int16
-data PacketAddToInventory   = PacketAddToInventory Int16 Int8 Int16
-data PacketArmAnimation     = PacketArmAnimation Int32 Bool
-data PacketNamedEntitySpawn = PacketNamedEntitySpawn Int32 PrefixString Int32 Int32 Int32 Int8 Int8 Int16
-data PacketPickupSpawn      = PacketPickupSpawn Int32 Int16 Int8 Int32 Int32 Int32 Int8 Int8 Int8
-data PacketCollectItem      = PacketCollectItem Int32 Int32
-data PacketVehicleSpawn     = PacketVehicleSpawn Int32 Int8 Int32 Int32 Int32
-data PacketMobSpawn         = PacketMobSpawn Int32 Int8 Int32 Int32 Int32 Int8 Int8
-data PacketEntityVelocity   = PacketEntityVelocity Int32 Int16 Int16 Int16
-data PacketDestroyEntity    = PacketDestroyEntity Int32
-data PacketEntity           = PacketEntity Int32
-data PacketEntityMove       = PacketEntityMove Int32 Int8 Int8 Int8
-data PacketEntityLook       = PacketEntityLook Int32 Int8 Int8
-data PacketEntityMoveLook   = PacketEntityMoveLook Int32 Int8 Int8 Int8 Int8 Int8
-data PacketEntityTeleport   = PacketEntityTeleport Int32 Int32 Int32 Int32 Int8 Int8
-data PacketAttachEntity     = PacketAttachEntity Int32 Int32
-data PacketPreChunk         = PacketPreChunk Int32 Int32 Bool
-data PacketMapChunk         = PacketMapChunk Int32 Int16 Int32 Int8 Int8 Int8 (PrefixByteArray Int32)
-data PacketMultiBlockChange = PacketMultiBlockChange Int32 Int32 BlockChangeArray
-data PacketBlockChange      = PacketBlockChange Int32 Int8 Int32 Int8 Int8
-data PacketComplexEntity    = PacketComplexEntity Int32 Int16 Int32 (PrefixByteArray Int16)
-data PacketDisconnect       = PacketDisconnect PrefixString
+type PrefixByteArray16 = PrefixByteArray Int16
+type PrefixByteArray32 = PrefixByteArray Int32
 
-deriving instance Show PacketKeepAlive
-deriving instance Show PacketLogin
-deriving instance Show PacketHandshake
-deriving instance Show PacketChat
-deriving instance Show PacketUpdateTime
-deriving instance Show PacketPlayerInventory
-deriving instance Show PacketSpawnPosition
-deriving instance Show PacketUseEntity
-deriving instance Show PacketFlying
-deriving instance Show PacketPlayerPosition
-deriving instance Show PacketPlayerLook
-deriving instance Show PacketPlayerMoveLook
-deriving instance Show PacketBlockDig
-deriving instance Show PacketPlace
-deriving instance Show PacketItemSwitch
-deriving instance Show PacketAddToInventory
-deriving instance Show PacketArmAnimation
-deriving instance Show PacketNamedEntitySpawn
-deriving instance Show PacketPickupSpawn
-deriving instance Show PacketCollectItem
-deriving instance Show PacketVehicleSpawn
-deriving instance Show PacketMobSpawn
-deriving instance Show PacketEntityVelocity
-deriving instance Show PacketDestroyEntity
-deriving instance Show PacketEntity
-deriving instance Show PacketEntityMove
-deriving instance Show PacketEntityLook
-deriving instance Show PacketEntityMoveLook
-deriving instance Show PacketEntityTeleport
-deriving instance Show PacketAttachEntity
-deriving instance Show PacketPreChunk
-deriving instance Show PacketMapChunk
-deriving instance Show PacketMultiBlockChange
-deriving instance Show PacketBlockChange
-deriving instance Show PacketComplexEntity
-deriving instance Show PacketDisconnect
-
-deriving instance Read PacketKeepAlive
-deriving instance Read PacketLogin
-deriving instance Read PacketHandshake
-deriving instance Read PacketChat
-deriving instance Read PacketUpdateTime
-deriving instance Read PacketPlayerInventory
-deriving instance Read PacketSpawnPosition
-deriving instance Read PacketUseEntity
-deriving instance Read PacketFlying
-deriving instance Read PacketPlayerPosition
-deriving instance Read PacketPlayerLook
-deriving instance Read PacketPlayerMoveLook
-deriving instance Read PacketBlockDig
-deriving instance Read PacketPlace
-deriving instance Read PacketItemSwitch
-deriving instance Read PacketAddToInventory
-deriving instance Read PacketArmAnimation
-deriving instance Read PacketNamedEntitySpawn
-deriving instance Read PacketPickupSpawn
-deriving instance Read PacketCollectItem
-deriving instance Read PacketVehicleSpawn
-deriving instance Read PacketMobSpawn
-deriving instance Read PacketEntityVelocity
-deriving instance Read PacketDestroyEntity
-deriving instance Read PacketEntity
-deriving instance Read PacketEntityMove
-deriving instance Read PacketEntityLook
-deriving instance Read PacketEntityMoveLook
-deriving instance Read PacketEntityTeleport
-deriving instance Read PacketAttachEntity
-deriving instance Read PacketPreChunk
-deriving instance Read PacketMapChunk
-deriving instance Read PacketMultiBlockChange
-deriving instance Read PacketBlockChange
-deriving instance Read PacketComplexEntity
-deriving instance Read PacketDisconnect
+$(definePacket "KeepAlive"        0x00 [])
+$(definePacket "Login"            0x01 ["Int32", "PrefixString", "PrefixString", "Int64", "Int8"])
+$(definePacket "Handshake"        0x02 ["PrefixString"])
+$(definePacket "Chat"             0x03 ["PrefixString"])
+$(definePacket "UpdateTime"       0x04 ["Int64"])
+$(definePacket "PlayerInventory"  0x05 ["Int32", "InventoryArray"])
+$(definePacket "SpawnPosition"    0x06 ["Int32", "Int32", "Int32"])
+$(definePacket "UseEntity"        0x07 ["Int32", "Int32"])
+$(definePacket "Flying"           0x0a ["Bool"])
+$(definePacket "PlayerPosition"   0x0b ["Float64be", "Float64be", "Float64be", "Float64be", "Bool"])
+$(definePacket "PlayerLook"       0x0c ["Float32be", "Float32be", "Bool"])
+$(definePacket "PlayerMoveLook"   0x0d ["Float64be", "Float64be", "Float64be", "Float64be", "Float32be", "Float32be", "Bool"])
+$(definePacket "BlockDig"         0x0e ["Int8", "Int32", "Int8", "Int32", "Int8"])
+$(definePacket "Place"            0x0f ["Int16", "Int32", "Int8", "Int32", "Int8"])
+$(definePacket "ItemSwitch"       0x10 ["Int32", "Int16"])
+$(definePacket "AddToInventory"   0x11 ["Int16", "Int8", "Int16"])
+$(definePacket "ArmAnimation"     0x12 ["Int32", "Bool"])
+$(definePacket "NamedEntitySpawn" 0x14 ["Int32", "PrefixString", "Int32", "Int32", "Int32", "Int8", "Int8", "Int16"])
+$(definePacket "PickupSpawn"      0x15 ["Int32", "Int16", "Int8", "Int32", "Int32", "Int32", "Int8", "Int8", "Int8"])
+$(definePacket "CollectItem"      0x16 ["Int32", "Int32"])
+$(definePacket "VehicleSpawn"     0x17 ["Int32", "Int8", "Int32", "Int32", "Int32"])
+$(definePacket "MobSpawn"         0x18 ["Int32", "Int8", "Int32", "Int32", "Int32", "Int8", "Int8"])
+$(definePacket "EntityVelocity"   0x1c ["Int32", "Int16", "Int16", "Int16"])
+$(definePacket "DestroyEntity"    0x1d ["Int32"])
+$(definePacket "Entity"           0x1e ["Int32"])
+$(definePacket "EntityMove"       0x1f ["Int32", "Int8", "Int8", "Int8"])
+$(definePacket "EntityLook"       0x20 ["Int32", "Int8", "Int8"])
+$(definePacket "EntityMoveLook"   0x21 ["Int32", "Int8", "Int8", "Int8", "Int8", "Int8"])
+$(definePacket "EntityTeleport"   0x22 ["Int32", "Int32", "Int32", "Int32", "Int8", "Int8"])
+$(definePacket "AttachEntity"     0x27 ["Int32", "Int32"])
+$(definePacket "PreChunk"         0x32 ["Int32", "Int32", "Bool"])
+$(definePacket "MapChunk"         0x33 ["Int32", "Int16", "Int32", "Int8", "Int8", "Int8", "PrefixByteArray32"])
+$(definePacket "MultiBlockChange" 0x34 ["Int32", "Int32", "BlockChangeArray"])
+$(definePacket "BlockChange"      0x35 ["Int32", "Int8", "Int32", "Int8", "Int8"])
+$(definePacket "ComplexEntity"    0x3b ["Int32", "Int16", "Int32", "PrefixByteArray16"])
+$(definePacket "Disconnect"       0xff ["PrefixString"])
 
 instance Binary Packet where
   put (Packet p) = do
@@ -302,80 +228,3 @@ instance Read Packet where
       makePacket :: AnyPacket p => [(p, String)] -> [(Packet, String)]
       makePacket = map (\(a, b) -> (Packet a, b))
       startsWith prefix = prefix `isPrefixOf` s
-
-
-instance Binary PacketKeepAlive where
-  get = return PacketKeepAlive
-  put _ = return ()
-$(derive makeBinary ''PacketLogin)
-$(derive makeBinary ''PacketHandshake)
-$(derive makeBinary ''PacketChat)
-$(derive makeBinary ''PacketUpdateTime)
-$(derive makeBinary ''PacketPlayerInventory)
-$(derive makeBinary ''PacketSpawnPosition)
-$(derive makeBinary ''PacketUseEntity)
-$(derive makeBinary ''PacketFlying)
-$(derive makeBinary ''PacketPlayerPosition)
-$(derive makeBinary ''PacketPlayerLook)
-$(derive makeBinary ''PacketPlayerMoveLook)
-$(derive makeBinary ''PacketBlockDig)
-$(derive makeBinary ''PacketPlace)
-$(derive makeBinary ''PacketItemSwitch)
-$(derive makeBinary ''PacketAddToInventory)
-$(derive makeBinary ''PacketArmAnimation)
-$(derive makeBinary ''PacketNamedEntitySpawn)
-$(derive makeBinary ''PacketPickupSpawn)
-$(derive makeBinary ''PacketCollectItem)
-$(derive makeBinary ''PacketVehicleSpawn)
-$(derive makeBinary ''PacketMobSpawn)
-$(derive makeBinary ''PacketEntityVelocity)
-$(derive makeBinary ''PacketDestroyEntity)
-$(derive makeBinary ''PacketEntity)
-$(derive makeBinary ''PacketEntityMove)
-$(derive makeBinary ''PacketEntityLook)
-$(derive makeBinary ''PacketEntityMoveLook)
-$(derive makeBinary ''PacketEntityTeleport)
-$(derive makeBinary ''PacketAttachEntity)
-$(derive makeBinary ''PacketPreChunk)
-$(derive makeBinary ''PacketMapChunk)
-$(derive makeBinary ''PacketMultiBlockChange)
-$(derive makeBinary ''PacketBlockChange)
-$(derive makeBinary ''PacketComplexEntity)
-$(derive makeBinary ''PacketDisconnect)
-
-instance AnyPacket PacketKeepAlive        where packetTag = const 0x00
-instance AnyPacket PacketLogin            where packetTag = const 0x01
-instance AnyPacket PacketHandshake        where packetTag = const 0x02
-instance AnyPacket PacketChat             where packetTag = const 0x03
-instance AnyPacket PacketUpdateTime       where packetTag = const 0x04
-instance AnyPacket PacketPlayerInventory  where packetTag = const 0x05
-instance AnyPacket PacketSpawnPosition    where packetTag = const 0x06
-instance AnyPacket PacketUseEntity        where packetTag = const 0x07
-instance AnyPacket PacketFlying           where packetTag = const 0x0a
-instance AnyPacket PacketPlayerPosition   where packetTag = const 0x0b
-instance AnyPacket PacketPlayerLook       where packetTag = const 0x0c
-instance AnyPacket PacketPlayerMoveLook   where packetTag = const 0x0d
-instance AnyPacket PacketBlockDig         where packetTag = const 0x0e
-instance AnyPacket PacketPlace            where packetTag = const 0x0f
-instance AnyPacket PacketItemSwitch       where packetTag = const 0x10
-instance AnyPacket PacketAddToInventory   where packetTag = const 0x11
-instance AnyPacket PacketArmAnimation     where packetTag = const 0x12
-instance AnyPacket PacketNamedEntitySpawn where packetTag = const 0x14
-instance AnyPacket PacketPickupSpawn      where packetTag = const 0x15
-instance AnyPacket PacketCollectItem      where packetTag = const 0x16
-instance AnyPacket PacketVehicleSpawn     where packetTag = const 0x17
-instance AnyPacket PacketMobSpawn         where packetTag = const 0x18
-instance AnyPacket PacketEntityVelocity   where packetTag = const 0x1c
-instance AnyPacket PacketDestroyEntity    where packetTag = const 0x1d
-instance AnyPacket PacketEntity           where packetTag = const 0x1e
-instance AnyPacket PacketEntityMove       where packetTag = const 0x1f
-instance AnyPacket PacketEntityLook       where packetTag = const 0x20
-instance AnyPacket PacketEntityMoveLook   where packetTag = const 0x21
-instance AnyPacket PacketEntityTeleport   where packetTag = const 0x22
-instance AnyPacket PacketAttachEntity     where packetTag = const 0x27
-instance AnyPacket PacketPreChunk         where packetTag = const 0x32
-instance AnyPacket PacketMapChunk         where packetTag = const 0x33
-instance AnyPacket PacketMultiBlockChange where packetTag = const 0x34
-instance AnyPacket PacketBlockChange      where packetTag = const 0x35
-instance AnyPacket PacketComplexEntity    where packetTag = const 0x3b
-instance AnyPacket PacketDisconnect       where packetTag = const 0xff

@@ -7,11 +7,12 @@ import Control.Exception
 import Network
 import System.IO
 import System.Environment
-import MinecraftProxy.Packet
 import Data.Binary
 import Data.Binary.Get
 import Data.Char
 import Control.Monad
+import MinecraftProxy.Packet
+import MinecraftProxy.AnyPacket
 
 type PacketFilter = Packet -> ([Packet], [Packet])
 serverPacketFilter :: PacketFilter
