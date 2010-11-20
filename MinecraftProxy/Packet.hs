@@ -118,7 +118,7 @@ $(definePacket "BlockDig"         0x0e ["Int8", "Int32", "Int8", "Int32", "Int8"
 $(definePacket "Place"            0x0f ["Int16", "Int32", "Int8", "Int32", "Int8"])
 $(definePacket "ItemSwitch"       0x10 ["Int32", "Int16"])
 $(definePacket "AddToInventory"   0x11 ["Int16", "Int8", "Int16"])
-$(definePacket "ArmAnimation"     0x12 ["Int32", "Bool"])
+$(definePacket "ArmAnimation"     0x12 ["Int32", "Word8"])
 $(definePacket "NamedEntitySpawn" 0x14 ["Int32", "PrefixString", "Int32", "Int32", "Int32", "Int8", "Int8", "Int16"])
 $(definePacket "PickupSpawn"      0x15 ["Int32", "Int16", "Int8", "Int32", "Int32", "Int32", "Int8", "Int8", "Int8"])
 $(definePacket "CollectItem"      0x16 ["Int32", "Int32"])
