@@ -73,9 +73,11 @@ serverListener server toClnt toSrv consoleChan = connectionListener serverPacket
 connectionListener :: PacketFilter -> String -> Handle -> PacketHandler -> PacketHandler -> Chan (Maybe String) -> IO ()
 connectionListener handler prefix handle onHandler backHandler consoleChan = do
     say "running"
-    readMore L.empty `catch` \(e :: SomeException) -> say (show e)
+    readMore L.empty `catch` report
     writeChan consoleChan Nothing
   where
+    report :: SomeException -> IO ()
+    report e = say (show e)
     readMore buffer = do
       ready <- hWaitForInput handle (-1) `catch` \(e :: SomeException) -> return True
       when (ready) $ do
@@ -114,8 +116,11 @@ connectionListener handler prefix handle onHandler backHandler consoleChan = do
 
 main :: IO ()
 main = withSocketsDo $ do
-    [hostName, portNumber] <- getArgs
-    listener <- listenOn (PortNumber 8000)
+    (\x -> case x of
+          [hostName, portNumber] -> [hostName, portNumber]
+          [hostName]             -> [hostName, "25565"]
+      -> [hostName, portNumber]) <- getArgs
+    listener <- listenOn (PortNumber 25565)
     (client, _, _) <- accept listener
     sClose listener
     server <- connectTo hostName (PortNumber . fromIntegral . read $ portNumber)
