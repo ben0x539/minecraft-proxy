@@ -73,31 +73,19 @@ serverListener server toClnt toSrv consoleChan = connectionListener serverPacket
 connectionListener :: PacketFilter -> String -> Handle -> PacketHandler -> PacketHandler -> Chan (Maybe String) -> IO ()
 connectionListener handler prefix handle onHandler backHandler consoleChan = do
     say "running"
-    readMore L.empty `catch` report
+    readData `catch` report
     writeChan consoleChan Nothing
   where
     report :: SomeException -> IO ()
     report e = say (show e)
-    readMore buffer = do
-      ready <- hWaitForInput handle (-1) `catch` \(e :: SomeException) -> return True
-      when (ready) $ do
-        nextChunk <- L.hGetNonBlocking handle (64*1024)
-        if L.null nextChunk
-          then say "no data"
-          else dealWith $ L.append buffer nextChunk
-
-    dealWith str = do
-      let len = L.length str
-      when (len > 1024*5) $
-        say ("buffer size: " ++ show (L.length str))
-      result <- try (evaluate $ runGetState (get :: Get Packet) str 0)
-      case result of
-        Left (e :: SomeException) -> do
-          readMore str
-        Right (p, rest, consumed) -> do
-          checkPacket (L.take consumed str) p
-          handlePacket p
-          dealWith rest
+    readData = L.hGetContents handle >>= dealWith
+    dealWith str
+      | L.null str  = return ()
+      | otherwise = do
+        let (p, rest, consumed) = runGetState (get :: Get Packet) str 0
+        checkPacket (L.take consumed str) p
+        handlePacket p
+        dealWith rest
 
     say = writeChan consoleChan . Just . ((prefix ++ ": ") ++)
 
@@ -136,8 +124,6 @@ main = withSocketsDo $ do
     sayLoop consoleChan
     killThread serverThread
     killThread clientThread
-    hClose client
-    hClose server
   where
     sendLoop chan handle = forever $ do
       packet <- readChan chan
