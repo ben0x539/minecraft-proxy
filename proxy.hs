@@ -2,6 +2,7 @@
 
 import Prelude hiding ((.), catch)
 import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.UTF8 as L8
 import Control.Concurrent
 import Control.Exception
 import Network
@@ -82,10 +83,17 @@ connectionListener handler prefix handle onHandler backHandler consoleChan = do
     dealWith str
       | L.null str  = return ()
       | otherwise = do
-        let (p, rest, consumed) = runGetState (get :: Get Packet) str 0
-        checkPacket (L.take consumed str) p
-        handlePacket p
-        dealWith rest
+        result <- try . evaluate $ runGetState (get :: Get Packet) str 0
+        case result of 
+          Left (e :: SomeException) -> do
+            report e
+            -- this might force the interleaved IO when printed to stdout,
+            -- possibly hanging?
+            say $ "buffer contents: " ++ L8.toString str
+          Right (p, rest, consumed) -> do
+            checkPacket (L.take consumed str) p
+            handlePacket p
+            dealWith rest
 
     say = writeChan consoleChan . Just . ((prefix ++ ": ") ++)
 
