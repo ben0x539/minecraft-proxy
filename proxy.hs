@@ -22,7 +22,6 @@ serverPacketFilter packet = inspect p
     p :: AnyPacket t => Maybe t
     p = fromPacket packet
     inspect :: (forall t. AnyPacket t => Maybe t) -> ([Packet], [Packet])
-    inspect (Just (PacketUpdateTime _)) = ([Packet $ PacketUpdateTime 300], [])
     inspect otherPacket = ([packet], [])
 
 type PacketHandler = Packet -> IO ()
