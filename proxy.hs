@@ -88,7 +88,7 @@ connectionListener handler prefix handle onHandler backHandler consoleChan = do
             report e
             -- this might force the interleaved IO when printed to stdout,
             -- possibly hanging?
-            say $ "buffer contents: " ++ L8.toString str
+            say $ "buffer contents: " ++ show (L8.toString str)
           Right (p, rest, consumed) -> do
             checkPacket (L.take consumed str) p
             handlePacket p
