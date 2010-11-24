@@ -18,6 +18,7 @@ import Control.Applicative
 import Data.Array.IArray
 import Control.Monad
 import Unsafe.Coerce
+import Debug.Trace
 
 (.) :: Functor f => (a -> b) -> f a -> f b
 (.) = fmap
@@ -109,7 +110,9 @@ $(definePacket "Chat"             0x03 ["PrefixString"])
 $(definePacket "UpdateTime"       0x04 ["Int64"])
 $(definePacket "PlayerInventory"  0x05 ["Int32", "InventoryArray"])
 $(definePacket "SpawnPosition"    0x06 ["Int32", "Int32", "Int32"])
-$(definePacket "UseEntity"        0x07 ["Int32", "Int32"])
+$(definePacket "UseEntity"        0x07 ["Int32", "Int32", "Bool"])
+$(definePacket "PlayerHealth"     0x08 ["Int8"])
+$(definePacket "PlayerRespawn"    0x09 [])
 $(definePacket "Flying"           0x0a ["Bool"])
 $(definePacket "PlayerPosition"   0x0b ["Float64be", "Float64be", "Float64be", "Float64be", "Bool"])
 $(definePacket "PlayerLook"       0x0c ["Float32be", "Float32be", "Bool"])
@@ -131,6 +134,7 @@ $(definePacket "EntityMove"       0x1f ["Int32", "Int8", "Int8", "Int8"])
 $(definePacket "EntityLook"       0x20 ["Int32", "Int8", "Int8"])
 $(definePacket "EntityMoveLook"   0x21 ["Int32", "Int8", "Int8", "Int8", "Int8", "Int8"])
 $(definePacket "EntityTeleport"   0x22 ["Int32", "Int32", "Int32", "Int32", "Int8", "Int8"])
+$(definePacket "EntityDamage"     0x26 ["Int32", "Int8"])
 $(definePacket "AttachEntity"     0x27 ["Int32", "Int32"])
 $(definePacket "PreChunk"         0x32 ["Int32", "Int32", "Bool"])
 $(definePacket "MapChunk"         0x33 ["Int32", "Int16", "Int32", "Int8", "Int8", "Int8", "PrefixByteArray32"])
@@ -154,6 +158,8 @@ instance Binary Packet where
         _ | tag == packetTag (undefined :: PacketPlayerInventory)  -> Packet . (get :: Get PacketPlayerInventory)
         _ | tag == packetTag (undefined :: PacketSpawnPosition)    -> Packet . (get :: Get PacketSpawnPosition)
         _ | tag == packetTag (undefined :: PacketUseEntity)        -> Packet . (get :: Get PacketUseEntity)
+        _ | tag == packetTag (undefined :: PacketPlayerHealth)     -> Packet . (get :: Get PacketPlayerHealth)
+        _ | tag == packetTag (undefined :: PacketPlayerRespawn)    -> Packet . (get :: Get PacketPlayerRespawn)
         _ | tag == packetTag (undefined :: PacketFlying)           -> Packet . (get :: Get PacketFlying)
         _ | tag == packetTag (undefined :: PacketPlayerPosition)   -> Packet . (get :: Get PacketPlayerPosition)
         _ | tag == packetTag (undefined :: PacketPlayerLook)       -> Packet . (get :: Get PacketPlayerLook)
@@ -175,6 +181,7 @@ instance Binary Packet where
         _ | tag == packetTag (undefined :: PacketEntityLook)       -> Packet . (get :: Get PacketEntityLook)
         _ | tag == packetTag (undefined :: PacketEntityMoveLook)   -> Packet . (get :: Get PacketEntityMoveLook)
         _ | tag == packetTag (undefined :: PacketEntityTeleport)   -> Packet . (get :: Get PacketEntityTeleport)
+        _ | tag == packetTag (undefined :: PacketEntityDamage)     -> Packet . (get :: Get PacketEntityDamage)
         _ | tag == packetTag (undefined :: PacketAttachEntity)     -> Packet . (get :: Get PacketAttachEntity)
         _ | tag == packetTag (undefined :: PacketPreChunk)         -> Packet . (get :: Get PacketPreChunk)
         _ | tag == packetTag (undefined :: PacketMapChunk)         -> Packet . (get :: Get PacketMapChunk)
@@ -182,6 +189,7 @@ instance Binary Packet where
         _ | tag == packetTag (undefined :: PacketBlockChange)      -> Packet . (get :: Get PacketBlockChange)
         _ | tag == packetTag (undefined :: PacketComplexEntity)    -> Packet . (get :: Get PacketComplexEntity)
         _ | tag == packetTag (undefined :: PacketDisconnect)       -> Packet . (get :: Get PacketDisconnect)
+        _ -> trace (show tag) undefined
       :: Get Packet
 
 instance Read Packet where
@@ -196,6 +204,8 @@ instance Read Packet where
           _ | startsWith "PacketPlayerInventory"  -> makePacket . (reads :: ReadS PacketPlayerInventory)
           _ | startsWith "PacketSpawnPosition"    -> makePacket . (reads :: ReadS PacketSpawnPosition)
           _ | startsWith "PacketUseEntity"        -> makePacket . (reads :: ReadS PacketUseEntity)
+          _ | startsWith "PacketPlayerHealth"     -> makePacket . (reads :: ReadS PacketPlayerHealth)
+          _ | startsWith "PacketPlayerRespawn"    -> makePacket . (reads :: ReadS PacketPlayerRespawn)
           _ | startsWith "PacketFlying"           -> makePacket . (reads :: ReadS PacketFlying)
           _ | startsWith "PacketPlayerPosition"   -> makePacket . (reads :: ReadS PacketPlayerPosition)
           _ | startsWith "PacketPlayerLook"       -> makePacket . (reads :: ReadS PacketPlayerLook)
@@ -217,6 +227,7 @@ instance Read Packet where
           _ | startsWith "PacketEntityLook"       -> makePacket . (reads :: ReadS PacketEntityLook)
           _ | startsWith "PacketEntityMoveLook"   -> makePacket . (reads :: ReadS PacketEntityMoveLook)
           _ | startsWith "PacketEntityTeleport"   -> makePacket . (reads :: ReadS PacketEntityTeleport)
+          _ | startsWith "PacketEntityDamage"     -> makePacket . (reads :: ReadS PacketEntityDamage)
           _ | startsWith "PacketAttachEntity"     -> makePacket . (reads :: ReadS PacketAttachEntity)
           _ | startsWith "PacketPreChunk"         -> makePacket . (reads :: ReadS PacketPreChunk)
           _ | startsWith "PacketMapChunk"         -> makePacket . (reads :: ReadS PacketMapChunk)
