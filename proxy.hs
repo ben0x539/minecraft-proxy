@@ -13,6 +13,7 @@ import Data.Binary.Get
 import Data.Char
 import Control.Monad
 import MinecraftProxy.Packet
+import MinecraftProxy.Packets
 import MinecraftProxy.AnyPacket
 
 type PacketFilter = Packet -> ([Packet], [Packet])
