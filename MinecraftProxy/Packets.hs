@@ -4,6 +4,7 @@ module MinecraftProxy.Packets (
   PrefixString (..),
   PrefixByteArray (..),
   BlockChangeArray (..),
+  BlockOffsetsArray (..),
   InventoryArray (..),
   Float64be (..),
   Float32be (..),
@@ -29,6 +30,7 @@ infixr 9 .
 newtype PrefixString              = PrefixString String deriving (Show, Read)
 newtype PrefixByteArray sizeType  = PrefixByteArray B.ByteString deriving (Show, Read)
 newtype BlockChangeArray          = BlockChangeArray (Array Int Int16, Array Int Int8, Array Int Int8) deriving (Show, Read)
+newtype BlockOffsetsArray         = BlockOffsetsArray (Array Int (Int8, Int8, Int8)) deriving (Show, Read)
 newtype InventoryArray            = InventoryArray (Array Int (Int16, Maybe (Int8, Int16))) deriving (Show, Read)
 newtype Float64be                 = Float64be Double deriving (Show, Read)
 newtype Float32be                 = Float32be Float deriving (Show, Read)
@@ -71,6 +73,15 @@ instance Binary BlockChangeArray where
     mapM_ put (elems coordArray)
     mapM_ put (elems blockArray)
     mapM_ put (elems metaArray)
+
+instance Binary BlockOffsetsArray where
+  get = do
+    (fromIntegral -> len) <- get :: Get Int32
+    BlockOffsetsArray . listArray (0, len - 1) . replicateM len get
+  put (BlockOffsetsArray offsetsArray) = do
+    let (_, hi) = bounds offsetsArray
+    put (fromIntegral hi + 1 :: Int32)
+    mapM_ put (elems offsetsArray)
 
 instance Binary InventoryArray where
   get = do
@@ -133,5 +144,6 @@ packetTypes = [
     ("MultiBlockChange" , 0x34 , ["Int32", "Int32", "BlockChangeArray"]),
     ("BlockChange"      , 0x35 , ["Int32", "Int8", "Int32", "Int8", "Int8"]),
     ("ComplexEntity"    , 0x3b , ["Int32", "Int16", "Int32", "PrefixByteArray16"]),
+    ("Explosion"        , 0x3c , ["Float64be", "Float64be", "Float64be", "Float32be", "BlockOffsetsArray"]),
     ("Disconnect"       , 0xff , ["PrefixString"])
   ]
